@@ -1,0 +1,15 @@
+version: 2
+
+sources:
+  - name: pos
+    description: "POSシステムからの生データ"
+    tables:
+      - name: raw_transactions
+        description: "売上明細データ"
+        config:
+          loaded_at_field: "transaction_at"
+      - name: raw_products
+        description: "商品マスタ"
+      - name: raw_stores
+        description: "店舗マスタ"
+

@@ -1,0 +1,50 @@
+version: 2
+
+models:
+  - name: stg_transactions
+    description: "売上明細（クレンジング済み）"
+    columns:
+      - name: transaction_id
+        description: "取引ID"
+      - name: store_id
+        description: "店舗ID"
+      - name: product_id
+        description: "商品ID"
+      - name: quantity
+        description: "数量"
+      - name: unit_price
+        description: "税抜単価"
+      - name: total_amount
+        description: "税込合計金額"
+      - name: transaction_at
+        description: "取引日時"
+      - name: transaction_date
+        description: "取引日"
+
+  - name: stg_products
+    description: "商品マスタ（クレンジング済み）"
+    columns:
+      - name: product_id
+        description: "商品ID"
+      - name: product_name
+        description: "商品名"
+      - name: category
+        description: "商品カテゴリ"
+      - name: unit_price
+        description: "税抜単価"
+      - name: tax_rate
+        description: "消費税率"
+      - name: is_active
+        description: "販売中フラグ"
+
+  - name: stg_stores
+    description: "店舗マスタ（クレンジング済み）"
+    columns:
+      - name: store_id
+        description: "店舗ID"
+      - name: store_name
+        description: "店舗名"
+      - name: prefecture
+        description: "都道府県"
+      - name: opened_at
+        description: "開店日"
