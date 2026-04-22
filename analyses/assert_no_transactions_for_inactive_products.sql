@@ -1,21 +1,10 @@
-with by_store as (
-    select sales_date, sum(total_sales) as store_total
-    from {{ ref('fct_daily_store_sales') }}
-    group by sales_date
-),
-
-by_category as (
-    select sales_date, sum(total_sales) as category_total
-    from {{ ref('fct_daily_category_sales') }}
-    group by sales_date
-)
-
 select
-    coalesce(s.sales_date, c.sales_date) as sales_date,
-    s.store_total,
-    c.category_total
-from by_store s
-full outer join by_category c on s.sales_date = c.sales_date
-where s.store_total != c.category_total
-   or s.store_total is null
-   or c.category_total is null
+    t.transaction_id,
+    t.product_id,
+    p.product_name,
+    p.is_active,
+    t.transaction_at
+from {{ ref('stg_transactions') }} t
+left join {{ ref('stg_products') }} p
+    on t.product_id = p.product_id
+where p.is_active = false
