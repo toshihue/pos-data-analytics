@@ -38,3 +38,7 @@ clean-targets:         # directories to be removed by `dbt clean`
 models:
   pos_data_analytics:
     +static_analysis: strict
+
+seeds:
+  pos_data_analytics:
+    +database: raw_pos_toshi
