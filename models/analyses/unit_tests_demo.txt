@@ -1,0 +1,17 @@
+unit_tests:
+  - name: test_tax_calculation
+    description: "飲料は8%、日用品は10%で税込金額を計算できること"
+    model: stg_transactions
+    given:
+      - input: source('pos', 'raw_transactions')
+        rows:
+          - {transaction_id: "TEST-001", store_id: "S001", product_id: "P001", quantity: 2, unit_price: 100, transaction_at: "2025-01-01 10:00:00"}
+          - {transaction_id: "TEST-002", store_id: "S001", product_id: "P009", quantity: 1, unit_price: 200, transaction_at: "2025-01-01 11:00:00"}
+      - input: source('pos', 'raw_products')
+        rows:
+          - {product_id: "P001", category: "飲料", tax_rate: 0.08}
+          - {product_id: "P009", category: "日用品", tax_rate: 0.10}
+    expect:
+      rows:
+        - {transaction_id: "TEST-001", category: "飲料", total_amount: 216}
+        - {transaction_id: "TEST-002", category: "日用品", total_amount: 220}
