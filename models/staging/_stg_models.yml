@@ -15,7 +15,9 @@ models:
       - name: unit_price
         description: "税抜単価"
       - name: total_amount
-        description: "税込合計金額"
+        description: "税込合計金額（下流互換のため保持）"
+      - name: calculated_total_amount
+        description: "税率込みで計算した税込合計金額"
       - name: transaction_at
         description: "取引日時"
       - name: transaction_date
@@ -48,3 +50,43 @@ models:
         description: "都道府県"
       - name: opened_at
         description: "開店日"
+
+unit_tests:
+  - name: test_tax_calculation
+    description: "stg_transactions の税込金額 calculated_total_amount が税率込みで正しく計算されることを検証する"
+    model: stg_transactions
+    given:
+      - input: source('pos', 'raw_transactions')
+        rows:
+          - {
+              transaction_id: 'TEST-001',
+              store_id: 1,
+              product_id: 'P-DRINK',
+              quantity: 2,
+              unit_price: 150,
+              transaction_at: '2024-01-01 10:00:00'
+            }
+          - {
+              transaction_id: 'TEST-002',
+              store_id: 1,
+              product_id: 'P-DAILY',
+              quantity: 3,
+              unit_price: 200,
+              transaction_at: '2024-01-01 11:00:00'
+            }
+      - input: source('pos', 'raw_products')
+        rows:
+          - {
+              product_id: 'P-DRINK',
+              category: '飲料',
+              tax_rate: 0.08
+            }
+          - {
+              product_id: 'P-DAILY',
+              category: '日用品',
+              tax_rate: 0.10
+            }
+    expect:
+      rows:
+        - {transaction_id: 'TEST-001', calculated_total_amount: 324.00}
+        - {transaction_id: 'TEST-002', calculated_total_amount: 660.00}
