@@ -1,0 +1,218 @@
+version: 2
+
+models:
+  - name: stg_pos_transactions
+    description: "POSトランザクションの生データを1テーブル1モデルで整形したstagingモデル。リネームと型変換のみを行う。"
+    columns:
+      - name: transaction_id
+        description: "トランザクションを一意に識別するID。"
+        data_tests:
+          - not_null
+      - name: store_id
+        description: "売上が発生した店舗ID。"
+        data_tests:
+          - not_null
+      - name: product_id
+        description: "販売された商品ID。"
+        data_tests:
+          - not_null
+      - name: quantity
+        description: "販売数量。"
+      - name: unit_price
+        description: "取引時点の単価。"
+      - name: source_total_amount
+        description: "raw_transactions に格納されている元の合計金額。検証用に保持する。"
+      - name: transaction_at
+        description: "売上の発生日時。"
+        data_tests:
+          - not_null
+      - name: transaction_date
+        description: "売上日時を日付に切り出した列。"
+        data_tests:
+          - not_null
+
+  - name: stg_pos_products
+    description: "商品マスタを1テーブル1モデルで整形したstagingモデル。リネームと型変換のみを行う。"
+    columns:
+      - name: product_id
+        description: "商品ID。"
+        data_tests:
+          - not_null
+          - unique
+      - name: product_name
+        description: "商品名。"
+      - name: category
+        description: "商品カテゴリ。"
+      - name: source_unit_price
+        description: "商品マスタ上の標準単価。"
+      - name: tax_rate
+        description: "商品に適用する税率。"
+      - name: is_active
+        description: "販売中の商品かどうか。"
+
+  - name: stg_pos_stores
+    description: "店舗マスタを1テーブル1モデルで整形したstagingモデル。リネームと型変換のみを行う。"
+    columns:
+      - name: store_id
+        description: "店舗ID。"
+        data_tests:
+          - not_null
+          - unique
+      - name: store_name
+        description: "店舗名。"
+      - name: prefecture
+        description: "店舗所在地の都道府県。"
+      - name: opened_at
+        description: "店舗の開店日。"
+
+  - name: int_pos_transactions_enriched
+    description: "POSトランザクションに商品・店舗情報をJOINし、品質判定と重複判定を付与したintermediateモデル。"
+    columns:
+      - name: transaction_id
+        description: "トランザクションID。"
+        data_tests:
+          - not_null
+      - name: store_id
+        description: "店舗ID。"
+      - name: product_id
+        description: "商品ID。"
+      - name: quantity
+        description: "販売数量。"
+      - name: unit_price
+        description: "取引時点の単価。"
+      - name: source_total_amount
+        description: "raw_transactions の元の total_amount。"
+      - name: total_amount
+        description: "dbtで再計算した売上金額。quantity * unit_price で算出する。"
+      - name: transaction_at
+        description: "売上日時。"
+      - name: transaction_date
+        description: "売上日。"
+        data_tests:
+          - not_null
+      - name: product_name
+        description: "商品名。"
+      - name: category
+        description: "商品カテゴリ。"
+      - name: tax_rate
+        description: "適用税率。"
+      - name: is_active
+        description: "販売中の商品かどうか。"
+      - name: store_name
+        description: "店舗名。"
+      - name: prefecture
+        description: "都道府県。"
+      - name: opened_at
+        description: "開店日。"
+      - name: gross_amount
+        description: "税抜/税込を区別せず、元ストアドに合わせて quantity * unit_price で算出した金額。"
+      - name: tax_amount
+        description: "quantity * unit_price * tax_rate で算出した税額。"
+      - name: net_amount
+        description: "元ストアドに合わせて quantity * unit_price で算出した金額。"
+      - name: record_status
+        description: "inactive_product / negative_quantity / negative_price / valid の品質判定。"
+      - name: transaction_id_dup_count
+        description: "transaction_id ごとの重複件数。"
+      - name: transaction_id_rn
+        description: "transaction_id 内で transaction_at desc, product_id desc, store_id desc で付番した順位。"
+      - name: is_duplicate_record
+        description: "重複 transaction_id のうち先頭以外を true とするフラグ。"
+      - name: processed_at
+        description: "モデル実行時刻。"
+
+  - name: mart_daily_store_sales
+    description: "店舗別日次売上マート。store_id と sales_date を粒度とし、incremental で更新する。"
+    columns:
+      - name: store_id
+        description: "店舗ID。"
+        data_tests:
+          - not_null
+      - name: store_name
+        description: "店舗名。"
+      - name: prefecture
+        description: "都道府県。"
+      - name: sales_date
+        description: "売上日。"
+        data_tests:
+          - not_null
+      - name: total_sales
+        description: "店舗・日別の売上合計。"
+      - name: total_quantity
+        description: "店舗・日別の販売数量合計。"
+      - name: transaction_count
+        description: "店舗・日別のユニーク transaction_id 件数。"
+      - name: invalid_record_count
+        description: "record_status が valid 以外の件数。"
+      - name: duplicate_record_count
+        description: "重複レコード件数。"
+      - name: first_transaction_at
+        description: "当日の最初の売上時刻。"
+      - name: last_transaction_at
+        description: "当日の最後の売上時刻。"
+      - name: loaded_at
+        description: "モデル実行時刻。"
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - store_id
+              - sales_date
+
+  - name: mart_daily_category_sales
+    description: "カテゴリ別日次売上マート。category と sales_date を粒度とし、incremental で更新する。"
+    columns:
+      - name: category
+        description: "商品カテゴリ。"
+        data_tests:
+          - not_null
+      - name: sales_date
+        description: "売上日。"
+        data_tests:
+          - not_null
+      - name: total_sales
+        description: "カテゴリ・日別の売上合計。"
+      - name: total_quantity
+        description: "カテゴリ・日別の販売数量合計。"
+      - name: transaction_count
+        description: "カテゴリ・日別のユニーク transaction_id 件数。"
+      - name: invalid_record_count
+        description: "record_status が valid 以外の件数。"
+      - name: duplicate_record_count
+        description: "重複レコード件数。"
+      - name: first_transaction_at
+        description: "当日の最初の売上時刻。"
+      - name: last_transaction_at
+        description: "当日の最後の売上時刻。"
+      - name: loaded_at
+        description: "モデル実行時刻。"
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - category
+              - sales_date
+
+unit_tests:
+  - name: test_int_pos_transactions_enriched_duplicate_and_status
+    description: "重複 transaction_id の後続行だけが duplicate と判定され、inactive product が invalid 判定されることを確認する。"
+    model: int_pos_transactions_enriched
+    given:
+      - input: ref('stg_pos_transactions')
+        rows:
+          - {transaction_id: TXN-100, store_id: S001, product_id: P001, quantity: 1, unit_price: 100, source_total_amount: 999, transaction_at: '2025-01-01 09:00:00', transaction_date: '2025-01-01'}
+          - {transaction_id: TXN-100, store_id: S001, product_id: P001, quantity: 1, unit_price: 100, source_total_amount: 999, transaction_at: '2025-01-01 08:00:00', transaction_date: '2025-01-01'}
+          - {transaction_id: TXN-200, store_id: S002, product_id: P999, quantity: 2, unit_price: 150, source_total_amount: 999, transaction_at: '2025-01-01 10:00:00', transaction_date: '2025-01-01'}
+      - input: ref('stg_pos_products')
+        rows:
+          - {product_id: P001, product_name: Water, category: Beverage, tax_rate: 0.08, is_active: true}
+          - {product_id: P999, product_name: Legacy, category: Other, tax_rate: 0.10, is_active: false}
+      - input: ref('stg_pos_stores')
+        rows:
+          - {store_id: S001, store_name: Tokyo, prefecture: Tokyo, opened_at: '2020-01-01'}
+          - {store_id: S002, store_name: Osaka, prefecture: Osaka, opened_at: '2020-01-01'}
+    expect:
+      rows:
+        - {transaction_id: TXN-100, record_status: valid, transaction_id_dup_count: 2, transaction_id_rn: 1, is_duplicate_record: false, total_amount: 100, tax_amount: 8}
+        - {transaction_id: TXN-100, record_status: valid, transaction_id_dup_count: 2, transaction_id_rn: 2, is_duplicate_record: true, total_amount: 100, tax_amount: 8}
+        - {transaction_id: TXN-200, record_status: inactive_product, transaction_id_dup_count: 1, transaction_id_rn: 1, is_duplicate_record: false, total_amount: 300, tax_amount: 30}
