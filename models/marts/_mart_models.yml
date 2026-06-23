@@ -3,6 +3,10 @@ version: 2
 models:
   - name: fct_daily_store_sales
     description: "日別・店舗別売上集計"
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "(store_id || '-' || cast(sales_date as varchar))"
     columns:
       - name: store_id
         description: "店舗ID"
@@ -18,9 +22,15 @@ models:
         description: "販売数量合計"
       - name: transaction_count
         description: "取引件数"
+      - name: average_basket_value
+        description: "平均客単価（税込）"
 
   - name: fct_daily_category_sales
     description: "日別・カテゴリ別売上集計"
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "(category || '-' || cast(sales_date as varchar))"
     columns:
       - name: category
         description: "商品カテゴリ"
@@ -32,3 +42,31 @@ models:
         description: "販売数量合計"
       - name: transaction_count
         description: "取引件数"
+      - name: average_basket_value
+        description: "平均客単価（税込）"
+
+  - name: fct_transaction_compare_demo
+    description: "advanced CI の record-level compare 用に取引を一意化したデモモデル"
+    data_tests:
+      - unique:
+          arguments:
+            column_name: transaction_id
+    columns:
+      - name: transaction_id
+        description: "比較用に一意化した取引ID"
+      - name: store_id
+        description: "店舗ID"
+      - name: product_id
+        description: "商品ID"
+      - name: category
+        description: "商品カテゴリ"
+      - name: transaction_date
+        description: "取引日"
+      - name: quantity
+        description: "数量"
+      - name: unit_price
+        description: "税抜単価"
+      - name: tax_rate
+        description: "消費税率"
+      - name: total_amount
+        description: "税込合計金額"
