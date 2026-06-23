@@ -36,3 +36,4 @@ models:
         description: "取引件数"
       - name: average_basket_value
         description: "平均客単価（税込）"
+
