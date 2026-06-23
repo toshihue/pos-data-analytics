@@ -18,6 +18,8 @@ models:
         description: "販売数量合計"
       - name: transaction_count
         description: "取引件数"
+      - name: average_basket_value
+        description: "平均客単価（税込）"
 
   - name: fct_daily_category_sales
     description: "日別・カテゴリ別売上集計"
@@ -32,3 +34,5 @@ models:
         description: "販売数量合計"
       - name: transaction_count
         description: "取引件数"
+      - name: average_basket_value
+        description: "平均客単価（税込）"

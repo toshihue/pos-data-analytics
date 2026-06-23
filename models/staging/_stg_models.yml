@@ -26,6 +26,9 @@ models:
     columns:
       - name: product_id
         description: "商品ID"
+        data_tests:
+          - not_null
+          - unique
       - name: product_name
         description: "商品名"
       - name: category
@@ -42,9 +45,26 @@ models:
     columns:
       - name: store_id
         description: "店舗ID"
+        data_tests:
+          - not_null
+          - unique
       - name: store_name
         description: "店舗名"
       - name: prefecture
         description: "都道府県"
       - name: opened_at
         description: "開店日"
+
+unit_tests:
+  - name: stg_transactions_calculates_tax_inclusive_total_amount
+    model: stg_transactions
+    given:
+      - input: source('pos', 'raw_transactions')
+        rows:
+          - {transaction_id: TXN-DEMO-001, store_id: S001, product_id: P001, quantity: 2, unit_price: 100, transaction_at: '2025-01-01 10:00:00'}
+      - input: source('pos', 'raw_products')
+        rows:
+          - {product_id: P001, category: 飲料, tax_rate: 0.08}
+    expect:
+      rows:
+        - {transaction_id: TXN-DEMO-001, store_id: S001, product_id: P001, quantity: 2, unit_price: 100, category: 飲料, tax_rate: 0.08, total_amount: 216.00, transaction_at: '2025-01-01 10:00:00', transaction_date: '2025-01-01'}
