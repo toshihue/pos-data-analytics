@@ -3,6 +3,10 @@ version: 2
 models:
   - name: fct_daily_store_sales
     description: "日別・店舗別売上集計"
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "(store_id || '-' || cast(sales_date as varchar))"
     columns:
       - name: store_id
         description: "店舗ID"
@@ -23,6 +27,10 @@ models:
 
   - name: fct_daily_category_sales
     description: "日別・カテゴリ別売上集計"
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "(category || '-' || cast(sales_date as varchar))"
     columns:
       - name: category
         description: "商品カテゴリ"
