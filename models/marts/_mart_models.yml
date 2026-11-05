@@ -32,3 +32,108 @@ models:
         description: "販売数量合計"
       - name: transaction_count
         description: "取引件数"
+
+  - name: fct_transactions
+    description: "トランザクション明細。集計はSemantic Viewとdbt Semantic Layer側で実施。"
+    semantic_model:
+      enabled: true
+      name: store_transactions
+    primary_entity: transaction_line
+    agg_time_dimension: transaction_date
+    columns:
+      - name: transaction_id
+        description: "取引ID。複数の明細行で共有される場合がある。"
+        data_tests:
+          - not_null
+      - name: store_id
+        description: "店舗ID"
+        entity:
+          type: foreign
+          name: store
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_stores')
+                field: store_id
+      - name: transaction_date
+        description: "取引日"
+        granularity: day
+        dimension:
+          type: time
+      - name: total_amount
+        description: "取引明細金額"
+      - name: quantity
+        description: "販売数量"
+    metrics:
+      - name: total_sales
+        description: "取引明細金額の合計"
+        type: simple
+        label: "売上合計"
+        agg: sum
+        expr: total_amount
+      - name: total_quantity
+        description: "販売数量の合計"
+        type: simple
+        label: "販売数量合計"
+        agg: sum
+        expr: quantity
+      - name: transaction_count
+        description: "一意な取引IDの件数"
+        type: simple
+        label: "取引件数"
+        agg: count_distinct
+        expr: transaction_id
+
+  - name: dim_stores
+    description: "店舗マスタ"
+    semantic_model:
+      enabled: true
+      name: stores
+    columns:
+      - name: store_id
+        description: "店舗ID（グレイン）"
+        entity:
+          type: primary
+          name: store
+        data_tests:
+          - unique
+          - not_null
+      - name: store_name
+        description: "店舗名"
+        dimension:
+          type: categorical
+      - name: prefecture
+        description: "都道府県"
+        dimension:
+          type: categorical
+
+  - name: semantic_view_daily_store_sales_results
+    description: "Semantic View から取得した店舗・日別売上のクエリ結果"
+    columns:
+      - name: store_id
+        description: "店舗ID"
+      - name: store_name
+        description: "店舗名"
+      - name: prefecture
+        description: "都道府県"
+      - name: transaction_date
+        description: "取引日"
+      - name: total_sales
+        description: "売上合計（税込）"
+      - name: total_quantity
+        description: "販売数量合計"
+      - name: transaction_count
+        description: "取引件数"
+        data_tests:
+          - not_null
+
+
+  - name: time_spine_daily
+    description: "Semantic Layer用の日次time spine。過去5年から未来30日まで。"
+    time_spine:
+      standard_granularity_column: date_day
+    columns:
+      - name: date_day
+        description: "日次の基準日"
+        granularity: day

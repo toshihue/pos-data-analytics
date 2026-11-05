@@ -1,0 +1,9 @@
+version: 2
+
+models:
+  - name: semantic_view_daily_store_sales
+    description: |
+      店舗売上のSemantic View。取引明細（fct_transactions）と店舗マスタ（dim_stores）を結合し、
+      売上・数量・取引件数のメトリクスを、店舗・県・日付のディメンションで提供する。
+    config:
+      tags: [semantic_view]
